@@ -9,20 +9,25 @@
 class Display{
 
 public:
-    Display(sf::Vector2u resolution, std::function<void()> callback);
+    Display(sf::Vector2u resolution);
     ~Display();
 
-    void handleEvents();
+    template <typename... Args>
+    void handleEvents(Args... args){window.handleEvents(args...);}
+
     void update(sf::Color pixel, bool hsync, bool vsync, bool n_blanking);
 private:
     void renderFrame();
 
-    sf::Image pixels;
-    sf::Texture tx;
-    sf::Sprite frame;
+    //TODO: smartpointers or static
+    sf::Image* pixels;
+    sf::Texture* tx;
+    sf::Sprite* frame;
     std::uint16_t hptr, vptr;
+    bool prev_hsync, prev_vsync;
+
+    sf::Clock fps_clk;
+    uint16_t frame_ctr;
 
     sf::RenderWindow window;
-
-    std::function<void()> on_window_close;
 };
