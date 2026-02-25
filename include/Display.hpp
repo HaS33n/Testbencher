@@ -9,6 +9,7 @@
 class Display{
 
 public:
+    Display() = delete;
     Display(sf::Vector2u resolution);
     ~Display();
 

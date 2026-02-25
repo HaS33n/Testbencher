@@ -1,4 +1,5 @@
 #include "../include/Display.hpp"
+#include "../include/Testbench.hpp"
 
 Display* dspl;
 void callback(const sf::Event::Closed& ev){
