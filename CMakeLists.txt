@@ -10,6 +10,7 @@ FetchContent_Declare(SFML
     EXCLUDE_FROM_ALL
     SYSTEM)
 FetchContent_MakeAvailable(SFML)
+find_package(verilator)
 
 add_executable(main src/main.cpp src/Display.cpp src/Testbench.cpp)
 target_compile_features(main PRIVATE cxx_std_17)
