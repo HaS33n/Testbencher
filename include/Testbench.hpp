@@ -4,15 +4,22 @@
 #include <vector>
 #include "Display.hpp"
 
+#include <verilated.h>
+#include "Vtop.h"
+
 //CURRENTLY LIMITED TO ONLY PICOSECONDS!!
 
 class TBClock{
 
 public:
-    struct ClockProperties{
+    class ClockProperties{
+    public:
+        ClockProperties() = delete;
+        ClockProperties(std::uint64_t p, double dc, std::uint64_t ps);
+
         std::uint64_t period; //ps
         double duty_cycle; // [0:1]
-        std::uint64_t phase_shift; //<= period
+        std::uint64_t phase_shift; //< period
     };
 
     TBClock() = delete;

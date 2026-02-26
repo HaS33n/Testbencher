@@ -1,0 +1,1 @@
+-O3 +librescan +libext+.v+.sv+.vh+.svh --trace-vcd  -Wall -Wno-fatal --report-unoptflat -CFLAGS "-flto" -LDFLAGS "-flto"

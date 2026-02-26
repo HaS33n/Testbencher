@@ -1,5 +1,19 @@
 #include "../include/Testbench.hpp"
-#include <algorithm>
+
+TBClock::ClockProperties::ClockProperties(std::uint64_t p, double dc, std::uint64_t ps){
+    if(dc > 1.0)
+        dc = 1.0;
+    else if(dc < 0.0)
+        dc = 0.0;
+    
+    duty_cycle = dc;
+
+    if(ps >= period)
+        ps = period - 1;
+    
+    phase_shift = ps;
+    period = p;
+}
 
 TBClock::TBClock(const ClockProperties &properties) : clk_props(properties){
     signal = false;
@@ -9,7 +23,8 @@ TBClock::TBClock(const ClockProperties &properties) : clk_props(properties){
 }
 
 std::uint64_t TBClock::timeToNextEdge() const{
-    return (counter > duty_cmp? clk_props.period - counter : duty_cmp - counter);
+    bool cond = counter > duty_cmp;
+    return (clk_props.period - counter) * cond + (duty_cmp - counter) * !cond;
 }
 
 bool TBClock::getClockSignal() const{
@@ -18,7 +33,7 @@ bool TBClock::getClockSignal() const{
 
 void TBClock::update(std::uint64_t time){
     counter += time;
-    counter %= clk_props.period;
+    counter -= (counter >= clk_props.period) * clk_props.period;
 
     signal = (counter <= duty_cmp);
 }

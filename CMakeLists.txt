@@ -12,8 +12,23 @@ FetchContent_Declare(SFML
 FetchContent_MakeAvailable(SFML)
 find_package(verilator)
 
-add_executable(main src/main.cpp src/Display.cpp src/Testbench.cpp)
+add_executable(main 
+    src/main.cpp 
+    src/Display.cpp 
+    src/Testbench.cpp
+)
+
 target_compile_features(main PRIVATE cxx_std_17)
 target_link_libraries(main PRIVATE SFML::Graphics)
+
+include(ProcessorCount)
+ProcessorCount(cores)
+
+verilate(
+    main
+    VERILATOR_ARGS -f verilator_flags.vc --threads $cores
+    INCLUDE_DIRS "src/"
+    SOURCES RTL/top.v
+)
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT main)
