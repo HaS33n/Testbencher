@@ -1,6 +1,28 @@
 #include "../include/Display.hpp"
 #include "../include/Testbench.hpp"
+//#include "Vtop.h"
 
+int main(int argc, char** argv){
+	Verilated::commandArgs(argc, argv);
+
+	Vtop dut;
+	std::vector<std::unique_ptr<ClkBinding>> clk;
+	std::vector<std::uint8_t*> ptrs;
+	ptrs.push_back(&dut.clk);
+
+	TBClock c(100000);
+	ClkBinding b(c,ptrs);
+	clk.push_back(std::make_unique<ClkBinding>(b));
+
+	Testbench tb(dut, clk, 1);
+
+	for(int i = 0; i < 10; i++)
+		tb.tick();
+
+	return 0;
+}
+
+/*
 Display* dspl;
 void callback(const sf::Event::Closed& ev){
 	delete dspl;
@@ -32,3 +54,4 @@ int main() {
 
     return 0;
 }
+*/

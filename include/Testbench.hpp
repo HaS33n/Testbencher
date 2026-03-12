@@ -2,9 +2,12 @@
 #include <cstdint>
 #include <climits>
 #include <vector>
+#include <queue>
+#include <memory>
 #include "Display.hpp"
 
 #include <verilated.h>
+#include <verilated_vcd_c.h>
 #include "Vtop.h"
 
 //CURRENTLY LIMITED TO ONLY PICOSECONDS!!
@@ -15,7 +18,7 @@ public:
     class ClockProperties{
     public:
         ClockProperties() = delete;
-        ClockProperties(std::uint64_t p, double dc, std::uint64_t ps);
+        ClockProperties(std::uint64_t p, double dc = 0.5, std::uint64_t ps = 0);
 
         std::uint64_t period; //ps
         double duty_cycle; // [0:1]
@@ -41,14 +44,24 @@ private:
     std::uint64_t duty_cmp;
 };
 
+using ClkBinding = std::pair<TBClock, std::vector<std::uint8_t*>>;
+
 class Testbench{
 
 public:
-    Testbench();
+    Testbench(Vtop& model, std::vector<std::unique_ptr<ClkBinding>>& bindings, bool en_trace);
     ~Testbench();
 
+    std::uint64_t tick();
+    
+    template<typename... Args>
+    void handleEvents(Args... args){display->handleEvents(args...);}
+    
 private:
     bool trace_enable;
     Display* display;
-    std::vector<TBClock> clocks;
+    std::vector<std::unique_ptr<ClkBinding>>& clocks;
+
+    VerilatedVcdC* tfp;
+    Vtop& dut;
 };

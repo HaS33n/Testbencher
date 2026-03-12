@@ -15,15 +15,15 @@ TBClock::ClockProperties::ClockProperties(std::uint64_t p, double dc, std::uint6
     period = p;
 }
 
-TBClock::TBClock(const ClockProperties &properties) : clk_props(properties){
-    signal = false;
-
+TBClock::TBClock(const ClockProperties& properties) : clk_props(properties){
     counter = properties.phase_shift;
     duty_cmp = double(properties.period) * properties.duty_cycle;
+
+    update(0);
 }
 
 std::uint64_t TBClock::timeToNextEdge() const{
-    bool cond = counter > duty_cmp;
+    bool cond = counter >= duty_cmp;
     return (clk_props.period - counter) * cond + (duty_cmp - counter) * !cond;
 }
 
@@ -35,5 +35,54 @@ void TBClock::update(std::uint64_t time){
     counter += time;
     counter -= (counter >= clk_props.period) * clk_props.period;
 
-    signal = (counter <= duty_cmp);
+    signal = (counter < duty_cmp);
+}
+
+Testbench::Testbench(Vtop& model, std::vector<std::unique_ptr<ClkBinding>>& bindings, bool en_trace) : clocks(bindings), dut(model) {
+    trace_enable = en_trace;
+    display = nullptr;
+
+    Verilated::traceEverOn(trace_enable);
+
+    tfp = nullptr;
+    if(trace_enable){
+        tfp = new VerilatedVcdC;
+        dut.trace(tfp, 99);
+        tfp->open("waveform.vcd");
+    }
+
+}
+
+Testbench::~Testbench(){
+    delete display;
+
+    tfp->close();
+    delete tfp;
+}
+
+std::uint64_t Testbench::tick(){
+    std::uint64_t tmin = ULONG_MAX;
+    for(auto& it : clocks){
+        auto tte = it.get()->first.timeToNextEdge();
+
+        bool cnd = tte < tmin;
+        tmin = tmin * !cnd + tte * cnd;
+    }
+    
+    dut.eval();
+
+    for(auto& it : clocks){
+        it.get()->first.update(tmin);
+        for(auto bnd : it.get()->second)
+            *bnd = it.get()->first.getClockSignal();
+    }
+    Verilated::timeInc(tmin);
+    dut.eval();
+
+    if(trace_enable){
+        tfp->dump(Verilated::time());
+        tfp->flush();
+    }
+
+    return tmin;
 }
