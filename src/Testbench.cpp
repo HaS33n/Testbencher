@@ -8,14 +8,14 @@ TBClock::ClockProperties::ClockProperties(std::uint64_t p, double dc, std::uint6
     
     duty_cycle = dc;
 
+    period = p;
     if(ps >= period)
         ps = period - 1;
     
     phase_shift = ps;
-    period = p;
 }
 
-TBClock::TBClock(const ClockProperties& properties) : clk_props(properties){
+TBClock::TBClock(const ClockProperties& properties, std::vector<std::uint8_t*>&& bindings) : clk_props(properties), signal_targets(bindings){
     counter = properties.phase_shift;
     duty_cmp = double(properties.period) * properties.duty_cycle;
 
@@ -36,9 +36,11 @@ void TBClock::update(std::uint64_t time){
     counter -= (counter >= clk_props.period) * clk_props.period;
 
     signal = (counter < duty_cmp);
+    for(auto& it : signal_targets)
+        *it = signal;
 }
 
-Testbench::Testbench(Vtop& model, std::vector<std::unique_ptr<ClkBinding>>& bindings, bool en_trace) : clocks(bindings), dut(model) {
+Testbench::Testbench(Vtop& model, std::vector<TBClock>&& clocks, bool en_trace) : clocks(clocks), dut(model) {
     trace_enable = en_trace;
     display = nullptr;
 
@@ -51,6 +53,11 @@ Testbench::Testbench(Vtop& model, std::vector<std::unique_ptr<ClkBinding>>& bind
         tfp->open("waveform.vcd");
     }
 
+    dut.eval();
+    if(trace_enable){
+        tfp->dump(Verilated::time());
+        tfp->flush();
+    }
 }
 
 Testbench::~Testbench(){
@@ -63,7 +70,7 @@ Testbench::~Testbench(){
 std::uint64_t Testbench::tick(){
     std::uint64_t tmin = ULONG_MAX;
     for(auto& it : clocks){
-        auto tte = it.get()->first.timeToNextEdge();
+        auto tte = it.timeToNextEdge();
 
         bool cnd = tte < tmin;
         tmin = tmin * !cnd + tte * cnd;
@@ -71,11 +78,9 @@ std::uint64_t Testbench::tick(){
     
     dut.eval();
 
-    for(auto& it : clocks){
-        it.get()->first.update(tmin);
-        for(auto bnd : it.get()->second)
-            *bnd = it.get()->first.getClockSignal();
-    }
+    for(auto& it : clocks)
+        it.update(tmin);
+        
     Verilated::timeInc(tmin);
     dut.eval();
 

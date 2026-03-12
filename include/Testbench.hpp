@@ -26,7 +26,7 @@ public:
     };
 
     TBClock() = delete;
-    TBClock(const ClockProperties& properties);
+    TBClock(const ClockProperties& properties, std::vector<std::uint8_t*>&& bindings);
     ~TBClock() = default;
 
     template <typename T>
@@ -39,17 +39,16 @@ public:
 private:
     bool signal;
     ClockProperties clk_props;
+    std::vector<std::uint8_t*> signal_targets;
 
     std::uint64_t counter;
     std::uint64_t duty_cmp;
 };
 
-using ClkBinding = std::pair<TBClock, std::vector<std::uint8_t*>>;
-
 class Testbench{
 
 public:
-    Testbench(Vtop& model, std::vector<std::unique_ptr<ClkBinding>>& bindings, bool en_trace);
+    Testbench(Vtop& model, std::vector<TBClock>&& clocks, bool en_trace);
     ~Testbench();
 
     std::uint64_t tick();
@@ -60,7 +59,7 @@ public:
 private:
     bool trace_enable;
     Display* display;
-    std::vector<std::unique_ptr<ClkBinding>>& clocks;
+    std::vector<TBClock> clocks;
 
     VerilatedVcdC* tfp;
     Vtop& dut;

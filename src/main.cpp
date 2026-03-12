@@ -6,17 +6,12 @@ int main(int argc, char** argv){
 	Verilated::commandArgs(argc, argv);
 
 	Vtop dut;
-	std::vector<std::unique_ptr<ClkBinding>> clk;
-	std::vector<std::uint8_t*> ptrs;
-	ptrs.push_back(&dut.clk);
+	TBClock clk({100000}, std::vector<uint8_t*>({&dut.clk}));
+	TBClock clk2({50000}, std::vector<uint8_t*>({&dut.clk2}));
 
-	TBClock c(100000);
-	ClkBinding b(c,ptrs);
-	clk.push_back(std::make_unique<ClkBinding>(b));
+	Testbench tb(dut, std::vector<TBClock>({clk, clk2}), 1);
 
-	Testbench tb(dut, clk, 1);
-
-	for(int i = 0; i < 10; i++)
+	for(int i = 0; i < 1000; i++)
 		tb.tick();
 
 	return 0;
