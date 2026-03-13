@@ -13,6 +13,7 @@ Display::Display(sf::Vector2u resolution){
     prev_hsync = prev_vsync = 0;
 
     frame_ctr = 0;
+    prev_clk = 0; //todo change
 
     window.clear(sf::Color::Black);
     window.display();
@@ -27,7 +28,13 @@ Display::~Display(){
 }
 
 //TODO: rewrite this to better simulate real hardware inside displays + dynamic resolution & HZ calculation + optimize
-void Display::update(sf::Color pixel, bool hsync, bool vsync, bool n_blanking){
+void Display::update(){
+    //update only on clk posedge
+    if(!(prev_clk == 0 && clk == 1)){
+        prev_clk = clk;
+        return;
+    }
+
     if(n_blanking){
         if(hptr < window.getSize().x && vptr < window.getSize().y)
             pixels->setPixel({hptr, vptr}, pixel);
@@ -45,6 +52,8 @@ void Display::update(sf::Color pixel, bool hsync, bool vsync, bool n_blanking){
     
     prev_hsync = hsync;
     prev_vsync = vsync;
+
+    prev_clk = clk;
 }
 
 //TODO: better fps calculation

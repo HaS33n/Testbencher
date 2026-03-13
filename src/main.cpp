@@ -2,6 +2,20 @@
 #include "../include/Testbench.hpp"
 //#include "Vtop.h"
 
+Testbench* tb_ptr;
+
+void callback(const sf::Event::Closed& ev){
+	tb_ptr->terminateDisplay();
+	exit(0);
+}
+
+void cb2(const sf::Event::KeyPressed& keyPress){
+	if (keyPress.scancode == sf::Keyboard::Scancode::Escape){
+		tb_ptr->terminateDisplay();
+		exit(0);
+	}
+}
+
 int main(int argc, char** argv){
 	Verilated::commandArgs(argc, argv);
 
@@ -9,10 +23,13 @@ int main(int argc, char** argv){
 	TBClock clk({100000}, std::vector<uint8_t*>({&dut.clk}));
 	TBClock clk2({50000}, std::vector<uint8_t*>({&dut.clk2}));
 
-	Testbench tb(dut, std::vector<TBClock>({clk, clk2}), 1);
+	Testbench tb(dut, std::vector<TBClock>({clk, clk2}), {640,480});
+	tb_ptr = &tb;
 
-	for(int i = 0; i < 1000; i++)
+	for(;;){
 		tb.tick();
+		tb.handleEvents(callback, cb2);
+	}
 
 	return 0;
 }

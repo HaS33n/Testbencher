@@ -5,6 +5,7 @@
 #include <queue>
 #include <memory>
 #include "Display.hpp"
+#include <tuple>
 
 #include <verilated.h>
 #include <verilated_vcd_c.h>
@@ -45,10 +46,12 @@ private:
     std::uint64_t duty_cmp;
 };
 
+using DisplayInterface = std::tuple<std::uint8_t*, sf::Color*, bool*, bool*, bool*>;
+
 class Testbench{
 
 public:
-    Testbench(Vtop& model, std::vector<TBClock>&& clocks, bool en_trace);
+    Testbench(Vtop& model, std::vector<TBClock>&& clocks, sf::Vector2u display_res = {0,0});
     ~Testbench();
 
     std::uint64_t tick();
@@ -56,8 +59,10 @@ public:
     template<typename... Args>
     void handleEvents(Args... args){display->handleEvents(args...);}
     
+    DisplayInterface getDisplayInterface();
+    void terminateDisplay();
+    
 private:
-    bool trace_enable;
     Display* display;
     std::vector<TBClock> clocks;
 

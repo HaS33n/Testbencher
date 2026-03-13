@@ -16,7 +16,13 @@ public:
     template <typename... Args>
     void handleEvents(Args... args){window.handleEvents(args...);}
 
-    void update(sf::Color pixel, bool hsync, bool vsync, bool n_blanking);
+    void update();
+
+    std::uint8_t clk;
+    sf::Color pixel; 
+    bool hsync; 
+    bool vsync;
+    bool n_blanking;
 private:
     void renderFrame();
 
@@ -26,6 +32,7 @@ private:
     sf::Sprite* frame;
     std::uint16_t hptr, vptr;
     bool prev_hsync, prev_vsync;
+    bool prev_clk;
 
     sf::Clock fps_clk;
     uint16_t frame_ctr;

@@ -12,12 +12,17 @@ FetchContent_Declare(SFML
 FetchContent_MakeAvailable(SFML)
 find_package(verilator)
 
+option(USE_DISPLAY_SIM "Turn on VGA simulation" OFF)
+option(TRACE_ENABLE "Enable VCD tracing and dumping during simulation" OFF)
+configure_file(compilation_config.h.in compilation_config.h)
+
 add_executable(main 
     src/main.cpp 
     src/Display.cpp 
     src/Testbench.cpp
 )
 
+target_compile_options(main PRIVATE -Werror=undef)
 target_compile_features(main PRIVATE cxx_std_17)
 target_link_libraries(main PRIVATE SFML::Graphics)
 
