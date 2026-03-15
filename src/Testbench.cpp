@@ -41,9 +41,9 @@ void TBClock::update(std::uint64_t time){
         *it = signal;
 }
 
-Testbench::Testbench(Vtop& model, std::vector<TBClock>&& clocks, sf::Vector2u display_res) : clocks(clocks), dut(model){
+Testbench::Testbench(Vtop& model, std::vector<TBClock>&& clocks, std::function<void(void)> event_callback, DisplayParameters display_config) : clocks(clocks), dut(model){
     #ifdef USE_DISPLAY_SIM
-        display = new Display(display_res);
+        display = new Display(display_config, event_callback);
     #else
         display = nullptr;
     #endif
@@ -65,9 +65,12 @@ Testbench::Testbench(Vtop& model, std::vector<TBClock>&& clocks, sf::Vector2u di
 }
 
 Testbench::~Testbench(){
+    dut.final();
     delete display;
 
-    tfp->close();
+    #ifdef TRACE_ENABLE
+        tfp->close();
+    #endif
     delete tfp;
 }
 
@@ -90,8 +93,8 @@ std::uint64_t Testbench::tick(){
         it.update(tmin);
         
     Verilated::timeInc(tmin);
-    dut.eval();
 
+    dut.eval();
     #ifdef USE_DISPLAY_SIM
         display->update();
     #endif

@@ -51,7 +51,7 @@ using DisplayInterface = std::tuple<std::uint8_t*, sf::Color*, bool*, bool*, boo
 class Testbench{
 
 public:
-    Testbench(Vtop& model, std::vector<TBClock>&& clocks, sf::Vector2u display_res = {0,0});
+    Testbench(Vtop& model, std::vector<TBClock>&& clocks, std::function<void(void)> event_callback, DisplayParameters display_config);
     ~Testbench();
 
     std::uint64_t tick();

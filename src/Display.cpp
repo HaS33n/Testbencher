@@ -1,11 +1,11 @@
 #include "../include/Display.hpp"
 #include <string>
 
-Display::Display(sf::Vector2u resolution){
-    window.create(sf::VideoMode(resolution), "Testbencher: VGA 0");
+Display::Display(DisplayParameters configuration, std::function<void(void)> callback) : render_callback(callback), config(configuration){
+    window.create(sf::VideoMode(configuration.resolution), "Testbencher: VGA 0");
     //window.setFramerateLimit(144);
 
-    pixels = new sf::Image(resolution, sf::Color::Black);
+    pixels = new sf::Image(configuration.resolution, sf::Color::Black);
     tx = new sf::Texture(*pixels);
     frame = new sf::Sprite(*tx);
 
@@ -13,7 +13,7 @@ Display::Display(sf::Vector2u resolution){
     prev_hsync = prev_vsync = 0;
 
     frame_ctr = 0;
-    prev_clk = 0; //todo change
+    prev_clk = 0; //may cause problems
 
     window.clear(sf::Color::Black);
     window.display();
@@ -27,7 +27,6 @@ Display::~Display(){
     window.close();
 }
 
-//TODO: rewrite this to better simulate real hardware inside displays + dynamic resolution & HZ calculation + optimize
 void Display::update(){
     //update only on clk posedge
     if(!(prev_clk == 0 && clk == 1)){
@@ -35,37 +34,39 @@ void Display::update(){
         return;
     }
 
+    //if positive signal polarity, then negate sync signals, TODO: optimize to avoid branching
+    bool hsync_v = config.h_sync_polarity? !hsync : hsync;
+    bool vsync_v = config.v_sync_polarity? !vsync : vsync;
+
     if(n_blanking){
-        if(hptr < window.getSize().x && vptr < window.getSize().y)
-            pixels->setPixel({hptr, vptr}, pixel);
+        if(hptr >= config.h_backporch && hptr < config.resolution.x + config.h_backporch && vptr >= config.v_backporch && vptr < config.resolution.y + config.v_backporch)
+            pixels->setPixel({hptr - config.h_backporch, vptr - config.v_backporch}, pixel);
         
         hptr++;
     }
 
-    hptr *= hsync;
+    hptr *= hsync_v;
 
-    vptr += (prev_hsync & !hsync);
-    vptr *= vsync;
+    vptr += (prev_hsync & !hsync_v);
+    vptr *= vsync_v;
 
-    if(prev_vsync & !vsync)
+    if(prev_vsync & !vsync_v)
         renderFrame();
     
-    prev_hsync = hsync;
-    prev_vsync = vsync;
+    prev_hsync = hsync_v;
+    prev_vsync = vsync_v;
 
     prev_clk = clk;
 }
 
-//TODO: better fps calculation
 void Display::renderFrame(){
     frame_ctr++;
-    auto time = fps_clk.getElapsedTime();
-    if(time >= sf::seconds(1)){
-        fps_clk.restart();
-        uint16_t fps = frame_ctr / time.asSeconds();
+    auto time = fps_clk.restart();
 
-        std::string str = std::to_string(fps);
-        window.setTitle("Testbencher: VGA 0 | FPS: " + str);
+    if(frame_ctr > 30){
+        std::string ftime = std::to_string(time.asMilliseconds());
+        window.setTitle("Testbencher: VGA 0 | FrameTime(ms): " + ftime);
+
         frame_ctr = 0;
     }
 
@@ -74,4 +75,6 @@ void Display::renderFrame(){
     window.clear();
     window.draw(*frame);
     window.display();
+
+    render_callback();
 }

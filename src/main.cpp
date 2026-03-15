@@ -16,54 +16,34 @@ void cb2(const sf::Event::KeyPressed& keyPress){
 	}
 }
 
+void onRender(){
+	tb_ptr->handleEvents(callback, cb2);
+}
+
 int main(int argc, char** argv){
 	Verilated::commandArgs(argc, argv);
 
 	Vtop dut;
-	TBClock clk({100000}, std::vector<uint8_t*>({&dut.clk}));
-	TBClock clk2({50000}, std::vector<uint8_t*>({&dut.clk2}));
+	TBClock clk({40000}, std::vector<uint8_t*>({&dut.clock}));
 
-	Testbench tb(dut, std::vector<TBClock>({clk, clk2}), {640,480});
+	Testbench tb(dut, std::vector<TBClock>({clk}), onRender, VGA_640_480_60);
 	tb_ptr = &tb;
 
+
+	dut.reset = 0;
+	dut.color_in = 0xFF0000;
+
+	auto interface = tb.getDisplayInterface();
+
 	for(;;){
+		*(std::get<0>(interface)) = dut.clk;
+		*(std::get<1>(interface)) = sf::Color(dut.red, dut.green, dut.blue);
+		*(std::get<2>(interface)) = dut.hsync;
+		*(std::get<3>(interface)) = dut.vsync;
+		*(std::get<4>(interface)) = dut.blank;
+
 		tb.tick();
-		tb.handleEvents(callback, cb2);
 	}
 
 	return 0;
 }
-
-/*
-Display* dspl;
-void callback(const sf::Event::Closed& ev){
-	delete dspl;
-	exit(0);
-}
-
-void cb2(const sf::Event::KeyPressed& keyPress){
-	if (keyPress.scancode == sf::Keyboard::Scancode::Escape){
-		delete dspl;
-		exit(0);
-	}
-}
-
-int main() {
-	dspl = new Display({640, 480});
-
-	while(1){
-		for(int i = 0; i < 480; i++){
-			for(int j = 0; j < 640; j++){
-				sf::Color clr = (j % 10 == 0? sf::Color::Red : sf::Color::Blue);
-				dspl->update(clr, true, true, true);
-			}
-			dspl->update(sf::Color::Black, false, true, false);
-		}
-		dspl->update(sf::Color::Black, false, false, false);
-		dspl->handleEvents(callback, cb2);
-	}
-
-
-    return 0;
-}
-*/

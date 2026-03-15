@@ -1,1 +1,1 @@
--O3 +librescan +libext+.v+.sv+.vh+.svh --trace-vcd  -Wall -Wno-fatal --report-unoptflat -CFLAGS "-flto" -LDFLAGS "-flto"
+-O3 +librescan +libext+.v+.sv+.vh+.svh --trace-vcd -Wall -Wno-fatal --report-unoptflat --x-assign fast --x-initial fast -CFLAGS "-flto" -LDFLAGS "-flto" 
