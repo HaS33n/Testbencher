@@ -1,39 +1,34 @@
 cmake_minimum_required(VERSION 3.28)
-project(CMakeSFMLProject LANGUAGES CXX)
+project(Testbencher LANGUAGES CXX VERSION 0.0.1)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-include(FetchContent)
-FetchContent_Declare(SFML
-    GIT_REPOSITORY https://github.com/SFML/SFML.git
-    GIT_TAG 3.0.2
-    GIT_SHALLOW ON
-    EXCLUDE_FROM_ALL
-    SYSTEM)
-FetchContent_MakeAvailable(SFML)
-find_package(verilator)
+find_package(verilator REQUIRED)
+find_package(SFML 3.0.2 COMPONENTS Graphics QUIET)
 
-option(USE_DISPLAY_SIM "Turn on VGA simulation" OFF)
-option(TRACE_ENABLE "Enable VCD tracing and dumping during simulation" OFF)
-configure_file(compilation_config.h.in compilation_config.h)
+if(NOT SFML_FOUND)
+    message(STATUS "Cannot find SFML on system, fetching from github")
 
-add_executable(main 
-    src/main.cpp 
+    include(FetchContent)
+    FetchContent_Declare(SFML
+        GIT_REPOSITORY https://github.com/SFML/SFML.git
+        GIT_TAG 3.0.2
+        GIT_SHALLOW ON
+        EXCLUDE_FROM_ALL
+        SYSTEM)
+    FetchContent_MakeAvailable(SFML)
+else()
+    message(STATUS "Found SFML on system")
+endif()
+
+add_library(Testbencher 
     src/Display.cpp 
     src/Testbench.cpp
 )
-
-target_compile_options(main PRIVATE -Werror=undef)
-target_compile_features(main PRIVATE cxx_std_17)
-target_link_libraries(main PRIVATE SFML::Graphics)
-
-include(ProcessorCount)
-ProcessorCount(cores)
-
-verilate(
-    main
-    VERILATOR_ARGS -f verilator_flags.vc --threads $cores
-    INCLUDE_DIRS "src/"
-    SOURCES RTL/top.v
+target_include_directories(Testbencher PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    ${VERILATOR_ROOT}/include
+    ${VERILATOR_ROOT}/include/vltstd
 )
+add_library(Testbencher::Testbencher ALIAS Testbencher)
 
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT main)
+target_compile_features(Testbencher PUBLIC cxx_std_17)
+target_link_libraries(Testbencher PUBLIC SFML::Graphics)

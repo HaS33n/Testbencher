@@ -8,8 +8,6 @@
 #include <tuple>
 
 #include <verilated.h>
-#include <verilated_vcd_c.h>
-#include "Vtop.h"
 
 //CURRENTLY LIMITED TO ONLY PICOSECONDS!!
 
@@ -31,7 +29,7 @@ public:
     ~TBClock() = default;
 
     template <typename T>
-    static std::uint64_t freqToPeriod(T freq){return (freq != 0? std::uint64_t(double(1/freq) * 10e12) : ULONG_MAX);} //Hz
+    static std::uint64_t freqToPeriod(T freq){return (freq != 0? std::uint64_t(double(1.0/freq) * 10e12) : ULONG_MAX);} //Hz
 
     std::uint64_t timeToNextEdge() const;
     bool getClockSignal() const;
@@ -46,26 +44,20 @@ private:
     std::uint64_t duty_cmp;
 };
 
-using DisplayInterface = std::tuple<std::uint8_t*, sf::Color*, bool*, bool*, bool*>;
-
+template <typename VerilatedModel>
 class Testbench{
 
 public:
-    Testbench(Vtop& model, std::vector<TBClock>&& clocks, std::function<void(void)> event_callback, DisplayParameters display_config);
+    Testbench(VerilatedModel& model, std::vector<TBClock>& clocks, std::vector<Display>& displays, std::function<void(void)> event_callback);
     ~Testbench();
 
     std::uint64_t tick();
     
-    template<typename... Args>
-    void handleEvents(Args... args){display->handleEvents(args...);}
-    
-    DisplayInterface getDisplayInterface();
-    void terminateDisplay();
-    
 private:
-    Display* display;
-    std::vector<TBClock> clocks;
+    std::vector<TBClock>& clocks;
+    std::vector<Display>& displays;
 
-    VerilatedVcdC* tfp;
-    Vtop& dut;
+    VerilatedModel& dut;
 };
+
+#include "../src/Testbench.tpp"

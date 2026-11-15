@@ -1,3 +1,0 @@
-#pragma once
-#cmakedefine USE_DISPLAY_SIM
-#cmakedefine TRACE_ENABLE

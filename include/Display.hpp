@@ -4,8 +4,8 @@
 #include <SFML/System.hpp>
 #include <cstdint>
 #include <functional>
-#include <iostream>
 
+// TODO add bpp
 struct DisplayParameters{
     sf::Vector2u resolution;
 
@@ -22,28 +22,32 @@ struct DisplayParameters{
 
 constexpr DisplayParameters VGA_640_480_60 = {{640, 480}, 16, 96, 48, false, 10, 2, 33, false};
 
+struct DisplayInterface{
+    std::uint8_t* clk;
+    sf::Color* pixel;
+    bool* hsync;
+    bool* vsync;
+    bool* n_blanking;
+};
+
 class Display{
 
 public:
     Display() = delete;
-    Display(DisplayParameters configuration, std::function<void(void)> callback);
+    Display(std::string name, DisplayParameters configuration, DisplayInterface interface, std::function<void(void)> callback);
     ~Display();
 
-    template <typename... Args>
-    void handleEvents(Args... args){window.handleEvents(args...);}
+    sf::RenderWindow& getWindow() {return *window;}
 
     void update();
-
-    std::uint8_t clk;
-    sf::Color pixel; 
-    bool hsync; 
-    bool vsync;
-    bool n_blanking;
 private:
     void renderFrame();
 
     //TODO: smartpointers or static
+    std::string name;
     DisplayParameters config;
+    DisplayInterface intf;
+
     sf::Image* pixels;
     sf::Texture* tx;
     sf::Sprite* frame;
@@ -52,8 +56,8 @@ private:
     bool prev_clk;
 
     sf::Clock fps_clk;
-    uint16_t frame_ctr;
+    std::uint16_t frame_ctr;
 
-    sf::RenderWindow window;
+    sf::RenderWindow* window;
     std::function<void(void)> render_callback;
 };

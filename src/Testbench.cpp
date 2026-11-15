@@ -1,5 +1,4 @@
 #include "../include/Testbench.hpp"
-#include "../build/compilation_config.h"
 
 TBClock::ClockProperties::ClockProperties(std::uint64_t p, double dc, std::uint64_t ps){
     if(dc > 1.0)
@@ -40,80 +39,3 @@ void TBClock::update(std::uint64_t time){
     for(auto& it : signal_targets)
         *it = signal;
 }
-
-Testbench::Testbench(Vtop& model, std::vector<TBClock>&& clocks, std::function<void(void)> event_callback, DisplayParameters display_config) : clocks(clocks), dut(model){
-    #ifdef USE_DISPLAY_SIM
-        display = new Display(display_config, event_callback);
-    #else
-        display = nullptr;
-    #endif
-    
-    #ifdef TRACE_ENABLE
-        Verilated::traceEverOn(true);
-        tfp = new VerilatedVcdC;
-        dut.trace(tfp, 99);
-        tfp->open("waveform.vcd");
-    #else
-        tfp = nullptr;
-    #endif
-
-    dut.eval();
-    #ifdef TRACE_ENABLE
-        tfp->dump(Verilated::time());
-        tfp->flush();
-    #endif
-}
-
-Testbench::~Testbench(){
-    dut.final();
-    delete display;
-
-    #ifdef TRACE_ENABLE
-        tfp->close();
-    #endif
-    delete tfp;
-}
-
-std::uint64_t Testbench::tick(){
-    std::uint64_t tmin = ULONG_MAX;
-    for(auto& it : clocks){
-        auto tte = it.timeToNextEdge();
-
-        bool cnd = tte < tmin;
-        tmin = tmin * !cnd + tte * cnd;
-    }
-    
-    dut.eval();
-
-    #ifdef USE_DISPLAY_SIM
-        display->update();
-    #endif
-
-    for(auto& it : clocks)
-        it.update(tmin);
-        
-    Verilated::timeInc(tmin);
-
-    dut.eval();
-    #ifdef USE_DISPLAY_SIM
-        display->update();
-    #endif
-
-    #ifdef TRACE_ENABLE
-        tfp->dump(Verilated::time());
-        tfp->flush();
-    #endif
-
-    return tmin;
-}
-
-#ifdef USE_DISPLAY_SIM
-DisplayInterface Testbench::getDisplayInterface(){
-    return {&(display->clk), &(display->pixel), &(display->hsync), &(display->vsync), &(display->n_blanking)};
-}
-
-void Testbench::terminateDisplay(){
-    delete display;
-    display = nullptr;
-}
-#endif
